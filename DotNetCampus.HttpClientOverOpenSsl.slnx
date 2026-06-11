@@ -4,6 +4,7 @@
     <File Path=".gitattributes" />
     <File Path="LICENSE" />
     <File Path="README.md" />
+    <File Path="README.en-us.md" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
     <File Path="build/Version.props" />

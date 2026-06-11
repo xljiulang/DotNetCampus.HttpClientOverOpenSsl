@@ -1,18 +1,14 @@
 # DotNetCampus.HttpClientOverOpenSsl
 
+[English](./README.en-us.md)
+
 让 `HttpClient` 的 HTTPS 请求通过 OpenSSL 原生 DLL（libssl-3）完成 TLS 握手和数据传输。
 
 ## 简介
 
 `DotNetCampus.HttpClientOverOpenSsl` 提供了一个基于 `SocketsHttpHandler` + OpenSSL 的 `HttpMessageHandler`，将 HTTPS 请求的 TLS 层交给 OpenSSL 原生库处理，而非依赖 .NET 内置的 `SslStream`。
 
-核心类 `OpenSslSocketsHttpHandler` 继承自 `HttpMessageHandler`，可直接传入 `HttpClient` 构造函数使用：
-
-```csharp
-using var handler = new OpenSslSocketsHttpHandler();
-using var client = new HttpClient(handler);
-var response = await client.GetAsync("https://example.com");
-```
+核心类是 `OpenSslSocketsHttpHandler`（继承自 `HttpMessageHandler`）和便捷封装 `OpenSslHttpClient`（继承自 `HttpClient`）。
 
 ## 使用方式
 
@@ -36,7 +32,7 @@ dotnet add package openssl-native
 
 #### 方式二：手动部署 DLL
 
-从 [OpenSSL 官方](https://www.openssl.org/) 或自编译获取以下文件，放置到应用程序的输出目录：
+从 [OpenSSL 官方](https://www.openssl.org/) 或 [slproweb](https://slproweb.com/products/Win32OpenSSL.html) 下载预编译的 Windows 版本，或自编译获取以下文件，放置到应用程序的输出目录：
 
 | 平台 | libssl 文件 | libcrypto 文件 |
 |------|------------|---------------|
@@ -48,11 +44,51 @@ dotnet add package openssl-native
 
 ### 3. 在 HttpClient 中使用
 
+#### 方式一：使用 `OpenSslHttpClient`（推荐）
+
+`OpenSslHttpClient` 继承自 `HttpClient`，内部已预配置 `OpenSslSocketsHttpHandler`，开箱即用：
+
 ```csharp
-var handler = new OpenSslSocketsHttpHandler();
-var client = new HttpClient(handler);
+using var client = new OpenSslHttpClient();
 var html = await client.GetStringAsync("https://www.baidu.com");
 ```
+
+用法与标准 `HttpClient` 完全一致，所有 `HttpClient` 的方法均可直接调用：
+
+```csharp
+using var client = new OpenSslHttpClient();
+
+// GET 请求
+var response = await client.GetAsync("https://example.com/api/data");
+
+// POST 请求
+var content = new StringContent("{\"key\":\"value\"}", Encoding.UTF8, "application/json");
+response = await client.PostAsync("https://example.com/api/submit", content);
+
+// 自定义请求
+using var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com");
+request.Headers.Add("X-Custom-Header", "value");
+response = await client.SendAsync(request);
+```
+
+#### 方式二：使用 `OpenSslSocketsHttpHandler`
+
+如果需要更精细的控制（例如自定义 `SocketsHttpHandler` 的超时、代理、Cookie 等设置），可以直接使用 `OpenSslSocketsHttpHandler`：
+
+```csharp
+var innerHandler = new SocketsHttpHandler
+{
+    UseCookies = false,
+    MaxConnectionsPerServer = 32,
+    PooledConnectionLifetime = TimeSpan.FromMinutes(2)
+};
+
+using var handler = new OpenSslSocketsHttpHandler(innerHandler);
+using var client = new HttpClient(handler);
+var response = await client.GetAsync("https://example.com");
+```
+
+> `OpenSslSocketsHttpHandler` 仅处理 HTTPS 请求的 TLS 层。HTTP（明文）请求不受影响，走默认 TCP 连接。
 
 ## 许可证
 
