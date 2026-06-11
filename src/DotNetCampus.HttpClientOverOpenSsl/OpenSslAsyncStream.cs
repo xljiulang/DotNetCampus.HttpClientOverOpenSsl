@@ -181,8 +181,15 @@ internal sealed class OpenSslAsyncStream : Stream
 
             var error = OpenSSLNative.SSL_get_error(_ssl, connectResult);
 
-            if (await TryHandleSslWantAsync(error, cancellationToken).ConfigureAwait(false))
+            if (error == OpenSSLNative.SSL_ERROR_WANT_READ)
             {
+                await WaitForSocketReadAsync(cancellationToken).ConfigureAwait(false);
+                continue;
+            }
+
+            if (error == OpenSSLNative.SSL_ERROR_WANT_WRITE)
+            {
+                await WaitForSocketWriteAsync(cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
@@ -302,8 +309,9 @@ internal sealed class OpenSslAsyncStream : Stream
                     return 0;
             }
 
-            if (await TryHandleSslWantAsync(error, cancellationToken).ConfigureAwait(false))
+            if (error == OpenSSLNative.SSL_ERROR_WANT_READ)
             {
+                await WaitForSocketReadAsync(cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
@@ -380,8 +388,9 @@ internal sealed class OpenSslAsyncStream : Stream
 
             var error = OpenSSLNative.SSL_get_error(_ssl!, written);
 
-            if (await TryHandleSslWantAsync(error, cancellationToken).ConfigureAwait(false))
+            if (error == OpenSSLNative.SSL_ERROR_WANT_WRITE)
             {
+                await WaitForSocketWriteAsync(cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
@@ -441,30 +450,6 @@ internal sealed class OpenSslAsyncStream : Stream
         }
 
         base.Dispose(disposing);
-    }
-
-    /// <summary>
-    /// 处理 SSL 操作的 WANT_READ/WANT_WRITE 状态。若错误码为 WANT_READ 或 WANT_WRITE，
-    /// 则异步等待 Socket 就绪并返回 <c>true</c>（调用方应重试 SSL 操作）；否则返回 <c>false</c>。
-    /// </summary>
-    /// <param name="sslError"><see cref="OpenSSLNative.SSL_get_error"/> 返回的错误码。</param>
-    /// <param name="cancellationToken">取消令牌。</param>
-    /// <returns>若已处理等待并应重试，返回 <c>true</c>；否则返回 <c>false</c>，调用方自行处理错误。</returns>
-    private async ValueTask<bool> TryHandleSslWantAsync(int sslError, CancellationToken cancellationToken)
-    {
-        switch (sslError)
-        {
-            case OpenSSLNative.SSL_ERROR_WANT_READ:
-                await WaitForSocketReadAsync(cancellationToken).ConfigureAwait(false);
-                return true;
-
-            case OpenSSLNative.SSL_ERROR_WANT_WRITE:
-                await WaitForSocketWriteAsync(cancellationToken).ConfigureAwait(false);
-                return true;
-
-            default:
-                return false;
-        }
     }
 
     /// <summary>
