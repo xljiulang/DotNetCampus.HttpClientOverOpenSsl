@@ -12,7 +12,7 @@ internal static class OpenSslCertificateLoader
     /// <summary>
     /// 缓存已导出的 Windows 根证书 PEM 文件路径列表，避免重复导出。
     /// </summary>
-    private static WindowsRootCertsCache? s_rootCertsCache;
+    private static WindowsRootCertsCache? _rootCertsCache;
 
     private sealed record WindowsRootCertsCache(IReadOnlyList<string> TempFilePaths);
 
@@ -27,14 +27,14 @@ internal static class OpenSslCertificateLoader
             return;
         }
 
-        if (s_rootCertsCache is not null)
+        if (_rootCertsCache is not null)
         {
-            LoadCertsFromCache(sslContext, s_rootCertsCache);
+            LoadCertsFromCache(sslContext, _rootCertsCache);
             return;
         }
 
         var tempFiles = await ExportWindowsRootCertsAsync().ConfigureAwait(false);
-        if (tempFiles is null || tempFiles.Count == 0)
+        if (tempFiles.Count == 0)
         {
             return;
         }
@@ -42,7 +42,7 @@ internal static class OpenSslCertificateLoader
         // 多线程重入时，多个实例可能同时导出，但最终只有一个缓存被保留。
         // 这不会导致业务问题，因为所有导出的证书内容相同。
         var cache = new WindowsRootCertsCache(tempFiles);
-        s_rootCertsCache = cache;
+        _rootCertsCache = cache;
         LoadCertsFromCache(sslContext, cache);
     }
 

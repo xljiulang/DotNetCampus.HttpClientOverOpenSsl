@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net8.0;net6.0</TargetFrameworks>
@@ -14,7 +14,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="openssl-native" />
+    <PackageReference Include="openssl-native" >
+      <PrivateAssets>all</PrivateAssets>
+      <!-- 默认不做引用，允许具体项目自己决定是否引用或自己分发 -->
+    </PackageReference>
     <PackageReference Include="Microsoft.SourceLink.GitHub">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

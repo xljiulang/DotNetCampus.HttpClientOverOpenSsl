@@ -7,11 +7,6 @@ namespace DotNetCampus.HttpClientOverOpenSsl;
 /// 基于非阻塞 Socket 的 OpenSSL TLS 加密流，通过 P/Invoke 调用 libssl-3 完成 TLS 握手和数据传输。
 /// </summary>
 /// <remarks>
-/// <para><b>与 <see cref="OpenSslStream"/>（Task.Run 方案）的区别：</b></para>
-/// <para><see cref="OpenSslStream"/> 将 <c>SSL_read</c>/<c>SSL_write</c>/<c>SSL_connect</c> 通过
-/// <c>Task.Run</c> 卸载到线程池执行，Socket 保持默认阻塞模式。优点是实现简单，缺点是线程池
-/// 线程被长时间阻塞在 I/O 上，高并发下可能导致线程池饥饿。</para>
-///
 /// <para><b>本类的实现方案（非阻塞 Socket + 原生异步 I/O 等待）：</b></para>
 ///
 /// <para><b>1. 核心思路</b></para>

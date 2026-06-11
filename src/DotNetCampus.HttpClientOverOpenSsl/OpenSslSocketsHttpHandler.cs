@@ -5,10 +5,10 @@ using System.Net.Sockets;
 namespace DotNetCampus.HttpClientOverOpenSsl;
 
 /// <summary>
-/// 基于 <see cref="SocketsHttpHandler"/> + <see cref="OpenSslStream"/> 的 HttpMessageHandler。
+/// 基于 <see cref="SocketsHttpHandler"/> + <see cref="OpenSslAsyncStream"/> 的 HttpMessageHandler。
 /// 将 <c>https://</c> 请求透明重写为 <c>http://</c>，使 <see cref="SocketsHttpHandler"/> 的
 /// <c>IsSecure</c> 判定为 <see langword="false"/>，跳过其内置 TLS 握手。
-/// 实际的 TLS 由 <see cref="SocketsHttpHandler.ConnectCallback"/> 中的 <see cref="OpenSslStream"/> 完成。
+/// 实际的 TLS 由 <see cref="SocketsHttpHandler.ConnectCallback"/> 中的 <see cref="OpenSslAsyncStream"/> 完成。
 /// </summary>
 /// <remarks>
 /// 调用方正常使用 <c>https://</c> URL。原本就是 <c>http://</c> 的请求不受影响，走默认 TCP 连接。
@@ -69,7 +69,7 @@ public sealed class OpenSslSocketsHttpHandler : HttpMessageHandler
 
     /// <summary>
     /// <see cref="SocketsHttpHandler.ConnectCallback"/> 的实现。
-    /// 根据请求是否原本为 https 决定是否使用 <see cref="OpenSslStream"/> 建立 TLS 连接。
+    /// 根据请求是否原本为 https 决定是否使用 <see cref="OpenSslAsyncStream"/> 建立 TLS 连接。
     /// </summary>
     private static async ValueTask<Stream> ConnectCallbackAsync(SocketsHttpConnectionContext context, CancellationToken cancellationToken)
     {
