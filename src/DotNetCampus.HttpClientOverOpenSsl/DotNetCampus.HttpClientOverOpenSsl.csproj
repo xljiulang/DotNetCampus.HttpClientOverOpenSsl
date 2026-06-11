@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="openssl-native" >
+    <PackageReference Include="openssl-native">
       <PrivateAssets>all</PrivateAssets>
       <!-- 默认不做引用，允许具体项目自己决定是否引用或自己分发 -->
     </PackageReference>
@@ -30,5 +30,9 @@
       <None Include="$(RepositoryRoot)LICENSE" Pack="true" PackagePath="\" />
     </ItemGroup>
   </Target>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DotNetCampus.HttpClientOverOpenSsl.Tests" />
+  </ItemGroup>
 
 </Project>
