@@ -26,7 +26,6 @@
 
   <Target Name="_IncludeAllDependencies" BeforeTargets="_GetPackageFiles">
     <ItemGroup>
-      <None Include="$(RepositoryRoot)README.md" Pack="true" PackagePath="\" />
       <None Include="$(RepositoryRoot)LICENSE" Pack="true" PackagePath="\" />
     </ItemGroup>
   </Target>
