@@ -9,6 +9,7 @@
     <File Path="build/Version.props" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/DotNetCampus.HttpClientOverOpenSsl.Tests/DotNetCampus.HttpClientOverOpenSsl.Tests.csproj" />
     <Project Path="src/DotNetCampus.HttpClientOverOpenSsl/DotNetCampus.HttpClientOverOpenSsl.csproj" />
   </Folder>
 </Solution>
