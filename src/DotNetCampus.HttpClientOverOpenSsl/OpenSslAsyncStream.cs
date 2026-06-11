@@ -1,4 +1,5 @@
 using System.Net.Sockets;
+
 using DotNetCampus.HttpClientOverOpenSsl.Interop;
 
 namespace DotNetCampus.HttpClientOverOpenSsl;
@@ -180,14 +181,14 @@ internal sealed class OpenSslAsyncStream : Stream
 
             var error = OpenSSLNative.SSL_get_error(_ssl, connectResult);
 
-                        if (await TryHandleSslWantAsync(error, cancellationToken).ConfigureAwait(false))
-                        {
-                            continue;
-                        }
+            if (await TryHandleSslWantAsync(error, cancellationToken).ConfigureAwait(false))
+            {
+                continue;
+            }
 
-                        var errCode = OpenSSLNative.ERR_get_error();
-                        var errStr = errCode != 0 ? OpenSSLNative.GetErrorString(errCode) : $"SSL 错误码: {error}";
-                        throw new OpenSslException($"TLS 握手失败: {errStr}", error, errCode);
+            var errCode = OpenSSLNative.ERR_get_error();
+            var errStr = errCode != 0 ? OpenSSLNative.GetErrorString(errCode) : $"SSL 错误码: {error}";
+            throw new OpenSslException($"TLS 握手失败: {errStr}", error, errCode);
         }
     }
 
@@ -292,21 +293,21 @@ internal sealed class OpenSslAsyncStream : Stream
 
             var error = OpenSSLNative.SSL_get_error(_ssl!, bytesRead);
 
-                        switch (error)
-                        {
-                            case OpenSSLNative.SSL_ERROR_ZERO_RETURN:
-                                return 0;
+            switch (error)
+            {
+                case OpenSSLNative.SSL_ERROR_ZERO_RETURN:
+                    return 0;
 
-                            case OpenSSLNative.SSL_ERROR_SYSCALL when bytesRead == 0:
-                                return 0;
-                        }
+                case OpenSSLNative.SSL_ERROR_SYSCALL when bytesRead == 0:
+                    return 0;
+            }
 
-                        if (await TryHandleSslWantAsync(error, cancellationToken).ConfigureAwait(false))
-                        {
-                            continue;
-                        }
+            if (await TryHandleSslWantAsync(error, cancellationToken).ConfigureAwait(false))
+            {
+                continue;
+            }
 
-                        throw new OpenSslException($"SSL_read 失败，错误码: {error}", error);
+            throw new OpenSslException($"SSL_read 失败，错误码: {error}", error);
         }
     }
 
@@ -379,12 +380,12 @@ internal sealed class OpenSslAsyncStream : Stream
 
             var error = OpenSSLNative.SSL_get_error(_ssl!, written);
 
-                        if (await TryHandleSslWantAsync(error, cancellationToken).ConfigureAwait(false))
-                        {
-                            continue;
-                        }
+            if (await TryHandleSslWantAsync(error, cancellationToken).ConfigureAwait(false))
+            {
+                continue;
+            }
 
-                        throw new OpenSslException($"SSL_write 失败，错误码: {error}", error);
+            throw new OpenSslException($"SSL_write 失败，错误码: {error}", error);
         }
     }
 
