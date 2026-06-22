@@ -286,6 +286,15 @@ internal sealed class SafeSslContextHandle : SafeHandleZeroOrMinusOneIsInvalid
 {
     public SafeSslContextHandle() : base(true) { }
 
+    /// <summary>
+    /// 将句柄标记为无效，防止 ReleaseHandle 时重复释放。
+    /// 用于已通过其他方式手动释放原生句柄的场景。
+    /// </summary>
+    public void MarkAsInvalid()
+    {
+        SetHandleAsInvalid();
+    }
+
     protected override bool ReleaseHandle()
     {
         OpenSSLNative.SSL_CTX_free(handle);
@@ -296,6 +305,15 @@ internal sealed class SafeSslContextHandle : SafeHandleZeroOrMinusOneIsInvalid
 internal sealed class SafeSslHandle : SafeHandleZeroOrMinusOneIsInvalid
 {
     public SafeSslHandle() : base(true) { }
+
+    /// <summary>
+    /// 将句柄标记为无效，防止 ReleaseHandle 时重复释放。
+    /// 用于已通过其他方式手动释放原生句柄的场景。
+    /// </summary>
+    public void MarkAsInvalid()
+    {
+        SetHandleAsInvalid();
+    }
 
     protected override bool ReleaseHandle()
     {
