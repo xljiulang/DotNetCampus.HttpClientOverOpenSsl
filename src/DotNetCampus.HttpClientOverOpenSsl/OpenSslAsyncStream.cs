@@ -269,7 +269,7 @@ internal sealed class OpenSslAsyncStream : Stream
     /// <inheritdoc />
     public override int Read(byte[] buffer, int offset, int count)
     {
-        ValidateBufferArgs(buffer,offset, count);
+        ValidateBufferArgs(buffer, offset, count);
         return Read(buffer.AsSpan(offset, count));
     }
 
@@ -345,17 +345,23 @@ internal sealed class OpenSslAsyncStream : Stream
         _socket.Blocking = true;
         try
         {
-            int written;
-            unsafe
+            while (!buffer.IsEmpty)
             {
-                fixed (byte* ptr = buffer)
+                int written;
+                unsafe
                 {
-                    written = OpenSSLNative.SSL_write(_ssl!, ptr, buffer.Length);
+                    fixed (byte* ptr = buffer)
+                    {
+                        written = OpenSSLNative.SSL_write(_ssl!, ptr, buffer.Length);
+                    }
                 }
-            }
 
-            if (written <= 0)
-            {
+                if (written > 0)
+                {
+                    buffer = buffer[written..];
+                    continue;
+                }
+
                 var error = OpenSSLNative.SSL_get_error(_ssl!, written);
                 throw new OpenSslException($"SSL_write 失败，错误码: {error}", error);
             }
@@ -399,6 +405,12 @@ internal sealed class OpenSslAsyncStream : Stream
 
             if (written > 0)
             {
+                if (written < buffer.Length)
+                {
+                    // 部分写入：推进缓冲区，继续发送剩余数据。
+                    buffer = buffer[written..];
+                    continue;
+                }
                 return;
             }
 
