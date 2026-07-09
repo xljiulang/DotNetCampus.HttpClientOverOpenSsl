@@ -1,6 +1,5 @@
-using System.Net.Sockets;
-
 using DotNetCampus.HttpClientOverOpenSsl.Interop;
+using System.Net.Sockets;
 
 namespace DotNetCampus.HttpClientOverOpenSsl;
 
@@ -43,7 +42,7 @@ namespace DotNetCampus.HttpClientOverOpenSsl;
 /// </list>
 ///
 /// <para><b>4. 同步 Read/Write 的兼容处理</b></para>
-/// <para>同步的 <see cref="Read"/> 和 <see cref="Write"/> 方法内临时设置
+/// <para>同步的 <see cref="Read(Span{byte})"/> 和 <see cref="Write(ReadOnlySpan{byte})"/> 方法内临时设置
 /// <c>_socket.Blocking = true</c>，使 <c>SSL_read</c>/<c>SSL_write</c> 能正常阻塞等待，
 /// 完成后在 <c>finally</c> 中恢复非阻塞模式。这保证了 Stream 基类的同步使用者不依赖
 /// 调用方线程模型。</para>
@@ -219,13 +218,12 @@ internal sealed class OpenSslAsyncStream : Stream
     }
 
     /// <inheritdoc />
-    public override int Read(byte[] buffer, int offset, int count)
+    public override int Read(Span<byte> buffer)
     {
         ThrowIfDisposed();
         ThrowIfNotAuthenticated();
-        ValidateBufferArgs(buffer, offset, count);
 
-        if (count == 0)
+        if (buffer.IsEmpty)
         {
             return 0;
         }
@@ -239,7 +237,7 @@ internal sealed class OpenSslAsyncStream : Stream
             {
                 fixed (byte* ptr = buffer)
                 {
-                    bytesRead = OpenSSLNative.SSL_read(_ssl!, ptr + offset, count);
+                    bytesRead = OpenSSLNative.SSL_read(_ssl!, ptr, buffer.Length);
                 }
             }
 
@@ -269,13 +267,18 @@ internal sealed class OpenSslAsyncStream : Stream
     }
 
     /// <inheritdoc />
-    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    public override int Read(byte[] buffer, int offset, int count)
+    {
+        return Read(buffer.AsSpan(offset, count));
+    }
+
+    /// <inheritdoc />
+    public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
         ThrowIfNotAuthenticated();
-        ValidateBufferArgs(buffer, offset, count);
 
-        if (count == 0)
+        if (buffer.IsEmpty)
         {
             return 0;
         }
@@ -287,9 +290,9 @@ internal sealed class OpenSslAsyncStream : Stream
             int bytesRead;
             unsafe
             {
-                fixed (byte* ptr = buffer)
+                fixed (byte* ptr = buffer.Span)
                 {
-                    bytesRead = OpenSSLNative.SSL_read(_ssl!, ptr + offset, count);
+                    bytesRead = OpenSSLNative.SSL_read(_ssl!, ptr, buffer.Length);
                 }
             }
 
@@ -320,13 +323,18 @@ internal sealed class OpenSslAsyncStream : Stream
     }
 
     /// <inheritdoc />
-    public override void Write(byte[] buffer, int offset, int count)
+    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    {
+        return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+    }
+
+    /// <inheritdoc />
+    public override void Write(ReadOnlySpan<byte> buffer)
     {
         ThrowIfDisposed();
         ThrowIfNotAuthenticated();
-        ValidateBufferArgs(buffer, offset, count);
 
-        if (count == 0)
+        if (buffer.IsEmpty)
         {
             return;
         }
@@ -340,7 +348,7 @@ internal sealed class OpenSslAsyncStream : Stream
             {
                 fixed (byte* ptr = buffer)
                 {
-                    written = OpenSSLNative.SSL_write(_ssl!, ptr + offset, count);
+                    written = OpenSSLNative.SSL_write(_ssl!, ptr, buffer.Length);
                 }
             }
 
@@ -357,13 +365,18 @@ internal sealed class OpenSslAsyncStream : Stream
     }
 
     /// <inheritdoc />
-    public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    public override void Write(byte[] buffer, int offset, int count)
+    {
+        Write(buffer.AsSpan(offset, count));
+    }
+
+    /// <inheritdoc />
+    public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
         ThrowIfNotAuthenticated();
-        ValidateBufferArgs(buffer, offset, count);
 
-        if (count == 0)
+        if (buffer.IsEmpty)
         {
             return;
         }
@@ -375,9 +388,9 @@ internal sealed class OpenSslAsyncStream : Stream
             int written;
             unsafe
             {
-                fixed (byte* ptr = buffer)
+                fixed (byte* ptr = buffer.Span)
                 {
-                    written = OpenSSLNative.SSL_write(_ssl!, ptr + offset, count);
+                    written = OpenSSLNative.SSL_write(_ssl!, ptr, buffer.Length);
                 }
             }
 
@@ -396,6 +409,12 @@ internal sealed class OpenSslAsyncStream : Stream
 
             throw new OpenSslException($"SSL_write 失败，错误码: {error}", error);
         }
+    }
+
+    /// <inheritdoc />
+    public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    {
+        return WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
     }
 
     /// <inheritdoc />
