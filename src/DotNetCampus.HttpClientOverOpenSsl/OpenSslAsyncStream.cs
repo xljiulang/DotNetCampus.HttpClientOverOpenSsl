@@ -78,12 +78,21 @@ namespace DotNetCampus.HttpClientOverOpenSsl;
 /// </remarks>
 internal sealed class OpenSslAsyncStream : Stream
 {
+    private readonly NetworkStream? _innerStream = null;
+    private readonly bool _leaveInnerStreamOpen;
     private readonly Socket _socket;
     private readonly bool _ownsSocket;
     private SafeSslContextHandle? _sslContext;
     private SafeSslHandle? _ssl;
     private bool _isAuthenticated;
     private bool _disposed;
+
+    public OpenSslAsyncStream(NetworkStream innerStream, bool leaveInnerStreamOpen)
+        : this(innerStream.Socket, ownsSocket: false)
+    {
+        _innerStream = innerStream;
+        _leaveInnerStreamOpen = leaveInnerStreamOpen;
+    }
 
     /// <summary>
     /// 使用指定的 Socket 创建 <see cref="OpenSslAsyncStream"/> 实例。
@@ -481,6 +490,11 @@ internal sealed class OpenSslAsyncStream : Stream
             if (_ownsSocket)
             {
                 _socket.Dispose();
+            }
+
+            if (!_leaveInnerStreamOpen && _innerStream is not null)
+            {
+                _innerStream.Dispose();
             }
         }
 
