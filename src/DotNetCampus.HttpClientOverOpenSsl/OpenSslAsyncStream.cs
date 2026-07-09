@@ -269,6 +269,7 @@ internal sealed class OpenSslAsyncStream : Stream
     /// <inheritdoc />
     public override int Read(byte[] buffer, int offset, int count)
     {
+        ValidateBufferArgs(buffer,offset, count);
         return Read(buffer.AsSpan(offset, count));
     }
 
@@ -325,6 +326,7 @@ internal sealed class OpenSslAsyncStream : Stream
     /// <inheritdoc />
     public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
+        ValidateBufferArgs(buffer, offset, count);
         return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
     }
 
@@ -367,6 +369,7 @@ internal sealed class OpenSslAsyncStream : Stream
     /// <inheritdoc />
     public override void Write(byte[] buffer, int offset, int count)
     {
+        ValidateBufferArgs(buffer, offset, count);
         Write(buffer.AsSpan(offset, count));
     }
 
@@ -414,6 +417,7 @@ internal sealed class OpenSslAsyncStream : Stream
     /// <inheritdoc />
     public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
+        ValidateBufferArgs(buffer, offset, count);
         return WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
     }
 
@@ -508,6 +512,7 @@ internal sealed class OpenSslAsyncStream : Stream
     private static void ValidateBufferArgs(byte[] buffer, int offset, int count)
     {
         ArgumentNullException.ThrowIfNull(buffer);
+
         if (offset < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(offset));
