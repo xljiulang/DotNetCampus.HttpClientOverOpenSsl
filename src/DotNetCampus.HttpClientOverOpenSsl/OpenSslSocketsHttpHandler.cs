@@ -15,7 +15,7 @@ namespace DotNetCampus.HttpClientOverOpenSsl
         private readonly SocketsHttpHandler _handler = new();
 
         private static readonly HashSet<string> _socksSchemes = new(StringComparer.OrdinalIgnoreCase) { "socks5", "socks4a", "socks4" };
-        private static readonly bool UseOpenSslAsyncStream = OperatingSystem.IsWindows();
+        private static readonly bool UseOpenSslAsyncStream = OpenSslAsyncStream.IsSupported;
 
         /// <summary>
         /// 获取或设置连接在连接池中空闲多久后可被视为可重用。
@@ -377,19 +377,33 @@ namespace DotNetCampus.HttpClientOverOpenSsl
         /// <inheritdoc/>
         protected sealed override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            ConnectionOptions.Set(request);
-            var response = base.Send(request, cancellationToken);
-            ConnectionOptions.Remove(request);
-            return response;
+            if (UseOpenSslAsyncStream)
+            {
+                ConnectionOptions.Set(request);
+                var response = base.Send(request, cancellationToken);
+                ConnectionOptions.Remove(request);
+                return response;
+            }
+            else
+            {
+                return base.Send(request, cancellationToken);
+            }
         }
 
         /// <inheritdoc/>
         protected sealed override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            ConnectionOptions.Set(request);
-            var response = await base.SendAsync(request, cancellationToken);
-            ConnectionOptions.Remove(request);
-            return response;
+            if (UseOpenSslAsyncStream)
+            {
+                ConnectionOptions.Set(request);
+                var response = await base.SendAsync(request, cancellationToken);
+                ConnectionOptions.Remove(request);
+                return response;
+            }
+            else
+            {
+                return await base.SendAsync(request, cancellationToken);
+            }
         }
 
         /// <summary>

@@ -138,6 +138,23 @@ internal static class OpenSSLNative
         }
     }
 
+    /// <summary>
+    /// 获取当前平台是否可加载 OpenSSL 原生库。
+    /// 通过已注册的 DllImportResolver 尝试加载 libssl-3，不抛出异常。
+    /// </summary>
+    /// <remarks>
+    /// 读取此属性会触发静态构造函数，确保 DllImportResolver 已注册。
+    /// 解析器会遍历所有搜索路径（BaseDirectory、NuGet runtimes、FallbackLibraryPath），
+    /// 若找到 DLL 则返回 <see langword="true"/> 并缓存句柄供后续 DllImport 使用。
+    /// </remarks>
+    public static bool IsOpenSslAvailable()
+    {
+        // 通过已注册的 DllImportResolver 尝试加载 libssl-3，
+        // NativeLibrary.TryLoad 会调用 MapAndLoad 走完整的搜索逻辑。
+        // 加载成功则说明 OpenSSL 原生库可用，同时句柄会被缓存供后续使用。
+        return NativeLibrary.TryLoad(LibSslConst, typeof(OpenSSLNative).Assembly, null, out _);
+    }
+
     #region Constants
 
     public const int SSL_VERIFY_NONE = 0x00;
@@ -233,7 +250,7 @@ internal static class OpenSSLNative
         var namePtr = Marshal.StringToHGlobalAnsi(name);
         try
         {
-            return (int) SSL_ctrl(ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME, TLSEXT_NAMETYPE_host_name, namePtr);
+            return (int)SSL_ctrl(ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME, TLSEXT_NAMETYPE_host_name, namePtr);
         }
         finally
         {
@@ -273,7 +290,7 @@ internal static class OpenSSLNative
     {
         var buffer = new byte[256];
         ERR_error_string_n(error, buffer, buffer.Length);
-        var nullIndex = Array.IndexOf(buffer, (byte) 0);
+        var nullIndex = Array.IndexOf(buffer, (byte)0);
         return nullIndex >= 0 ? System.Text.Encoding.ASCII.GetString(buffer, 0, nullIndex) : System.Text.Encoding.ASCII.GetString(buffer);
     }
 

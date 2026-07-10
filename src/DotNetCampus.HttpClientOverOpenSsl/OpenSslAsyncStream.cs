@@ -87,6 +87,8 @@ internal sealed class OpenSslAsyncStream : Stream
     private bool _isAuthenticated;
     private bool _disposed;
 
+    public static bool IsSupported { get; } = OperatingSystem.IsWindows() && OpenSSLNative.IsOpenSslAvailable();
+
     public OpenSslAsyncStream(NetworkStream innerStream, bool leaveInnerStreamOpen)
         : this(innerStream.Socket, ownsSocket: false)
     {
